@@ -1,0 +1,8 @@
+dist/
+node_modules/
+plugins/
+vendor/
+package-lock.json
+package.json
+querys.sql
+sftp-config.json
