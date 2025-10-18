@@ -1,5 +1,5 @@
 <?php
-require_once "libs/database.php";
+require_once __DIR__ . "/database.php";
 
 class baseCrud{
 	protected $tabla;

@@ -1,5 +1,5 @@
 <?php
-require_once "libs/baseCrud.php";
+require_once __DIR__ . "/../libs/baseCrud.php";
 
 class documentosRevisiones extends baseCrud{
 	protected $tabla = 'documentos_revisiones';
@@ -12,10 +12,10 @@ class documentosRevisiones extends baseCrud{
 				FROM
 					solicitudes_historico sh INNER JOIN usuarios usu ON sh.creado_por = usu.id
 				WHERE
-					sh.fk_solicitudes = $datos[solicitud]
+					sh.fk_solicitudes = ?
 				ORDER BY
 					sh.fecha_creacion";
 		$db = new database();
-       	return $db->ejecutarConsulta($sql);
+	       	return $db->ejecutarPreparado($sql,'i',[ (int)$datos['solicitud'] ]);
     }
 }

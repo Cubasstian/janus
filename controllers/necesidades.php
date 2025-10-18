@@ -29,25 +29,67 @@ class necesidades extends baseCrud{
 		}
 	}
 
+	public function actualizar($datos){
+		// Actualizar la necesidad
+		$resultado = parent::update([
+			'info' => $datos['info'],
+			'id' => $datos['id']
+		]);
+
+		if($resultado['ejecuto']){
+			// Eliminar imputaciones existentes
+			$objNI = new necesidadesImputaciones();
+			$objNI->deleteByNecesidad($datos['id']);
+			
+			// Insertar nuevas imputaciones
+			foreach ($datos['imputaciones'] as $value) {
+				$respuesta = $objNI->insert([
+					'info' => [
+						'fk_necesidades' => $datos['id'],
+						'imputacion' => $value['imputacion'],
+						'valor' => $value['valor']
+					]
+				]);
+			}
+			if($respuesta['ejecuto']){
+				return $resultado;
+			}
+		}
+		return $resultado;
+	}
+
 	public function getNecesidades($datos){
-		$filtro = 0;
+		$where = '0=1'; $types = ''; $params = [];
 		switch ($datos['criterio']) {
 			case 'id':
-				$filtro = "nec.id = ".$datos['valor'];
+				$where = 'nec.id = ?'; $types = 'i'; $params[] = (int)$datos['valor'];
 				break;
-			case 'gerenciaVigencia':				
-				$filtro = "dep.fk_gerencias = $datos[gerencia] AND nec.fk_vigencias = $datos[vigencia]";
+			case 'gerenciaVigencia':
+				$where = 'dep.fk_gerencias = ? AND nec.fk_vigencias = ?';
+				$types = 'ii';
+				$params[] = (int)$datos['gerencia'];
+				$params[] = (int)$datos['vigencia'];
+				break;
+			case 'gerencia':
+				$where = 'dep.fk_gerencias = ?';
+				$types = 'i';
+				$params[] = (int)$datos['gerencia'];
+				break;
+			case 'todas':
+				$where = '1=1';
 				break;
 			case 'libres':
-				$filtro = "nec.estado = 'Libre' AND vig.vigencia = YEAR(CURDATE())";
+				$where = "nec.estado = 'Libre' AND vig.vigencia = YEAR(CURDATE())";
 				break;
 			default:
-				$filtro = 0;
+				$where = '0=1';
 				break;
 		}
 		$sql = "SELECT
 					nec.id,
+					nec.pacc,
 					ger.nombre AS gerencia,
+					nec.fk_dependencias,
 					dep.dependencia AS dependencia,
 					dep.unidad AS unidad,
 					nec.definicion_tecnica,
@@ -58,12 +100,15 @@ class necesidades extends baseCrud{
 					nec.honorarios,
 					nec.presupuesto,
 					ROUND(nec.presupuesto / nec.honorarios, 1) AS tiempo,
-					nec.estado
+					nec.estado,
+					vig.vigencia,
+					nec.fk_vigencias,
+					dep.fk_gerencias
 				FROM
 					(necesidades nec INNER JOIN vigencias vig ON nec.fk_vigencias = vig.id) INNER JOIN (dependencias dep INNER JOIN gerencias ger ON dep.fk_gerencias = ger.id) ON nec.fk_dependencias = dep.id
-				WHERE					
-					$filtro";
+				WHERE $where
+				ORDER BY nec.id DESC";
 		$db = new database();
-       	return $db->ejecutarConsulta($sql);
+		return $db->ejecutarPreparado($sql, $types, $params);
 	}
 }

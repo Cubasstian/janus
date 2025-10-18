@@ -1,0 +1,150 @@
+<!-- PLANTILLA ESTÁNDAR PARA PROCESOS JANUS -->
+<!-- Incluir en el header de cada página -->
+<link rel="stylesheet" href="../dist/css/tabla-procesos-estandar.css">
+
+<!-- CONTENIDO DE LA PÁGINA -->
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- TÍTULO DE LA PÁGINA -->
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h3 class="card-title">
+                        <i class="fas fa-[ICONO]"></i> [TÍTULO DE LA PÁGINA]
+                    </h3>
+                </div>
+                
+                <div class="card-body">
+                    <!-- PANEL DE FILTROS ESTÁNDAR -->
+                    <div class="filter-section-standard">
+                        <div class="row align-items-end">
+                            <!-- Búsqueda General -->
+                            <div class="col-md-4">
+                                <label class="form-label-standard">Búsqueda General</label>
+                                <input type="text" 
+                                       id="filtro-busqueda-estandar" 
+                                       class="form-control form-control-standard" 
+                                       placeholder="Buscar en todos los campos...">
+                            </div>
+                            
+                            <!-- Filtro por Gerencia -->
+                            <div class="col-md-3">
+                                <label class="form-label-standard">Gerencia</label>
+                                <select id="filtro-gerencia-estandar" 
+                                        class="form-control form-control-standard">
+                                    <option value="">Todas las gerencias</option>
+                                </select>
+                            </div>
+                            
+                            <!-- [FILTROS ADICIONALES PERSONALIZADOS] -->
+                            <!-- Agregar aquí campos específicos de cada página -->
+                            
+                            <!-- Botón Limpiar -->
+                            <div class="col-md-2">
+                                <button type="button" 
+                                        id="btn-limpiar-filtros-estandar" 
+                                        class="btn btn-filter-clear-standard w-100">
+                                    <i class="fas fa-eraser"></i> Limpiar
+                                </button>
+                            </div>
+                            
+                            <!-- Contador -->
+                            <div class="col-md-3 text-right">
+                                <span class="form-label-standard d-block">Registros Encontrados</span>
+                                <span id="contador-registros-estandar" class="badge badge-count-standard">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- TABLA ESTÁNDAR -->
+                    <div class="table-responsive">
+                        <table id="tabla-procesos-estandar" class="table table-standard table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <!-- [COLUMNAS PERSONALIZADAS] -->
+                                    <!-- Definir aquí las columnas específicas de cada página -->
+                                    <th>ID</th>
+                                    <th>Fecha</th>
+                                    <th>Proceso</th>
+                                    <th>Estado</th>
+                                    <th>Gerencia</th>
+                                    <th>Días</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Los datos se cargarán dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SCRIPTS ESTÁNDAR -->
+<script src="../dist/js/tabla-procesos-estandar.js"></script>
+
+<!-- SCRIPT PERSONALIZADO DE LA PÁGINA -->
+<script>
+// Función requerida para renderizar cada fila de la tabla
+function renderizarFilaTablaPersonalizada(item) {
+    // PERSONALIZAR ESTA FUNCIÓN PARA CADA PÁGINA
+    const diasTranscurridos = TablaEstandarJanus.calcularDiasTranscurridos(item.fecha_creacion);
+    const badgeDias = TablaEstandarJanus.generarBadgeDias(diasTranscurridos);
+    
+    return `
+        <tr class="table-row-hover-standard" data-id="${item.id}">
+            <td>${item.id}</td>
+            <td>${TablaEstandarJanus.formatearFecha(item.fecha_creacion)}</td>
+            <td>${item.proceso || '-'}</td>
+            <td>${item.estado || '-'}</td>
+            <td>${item.gerencia || '-'}</td>
+            <td>${badgeDias}</td>
+            <td>
+                ${TablaEstandarJanus.generarBotonAccion('Ver', 'btn-info-standard', `verDetalle(${item.id})`, 'fas fa-eye')}
+                ${TablaEstandarJanus.generarBotonAccion('Editar', 'btn-warning-standard', `editarRegistro(${item.id})`, 'fas fa-edit')}
+            </td>
+        </tr>
+    `;
+}
+
+// Configuración personalizada para esta página
+$(document).ready(function() {
+    // Inicializar sistema con configuración personalizada si es necesario
+    TablaEstandarJanus.inicializar({
+        // rowsPerPage: 50, // Cambiar cantidad de registros por página
+        // Otras configuraciones personalizadas
+    });
+    
+    // Cargar datos iniciales
+    cargarDatosPagina();
+});
+
+// Función para cargar datos específicos de la página
+function cargarDatosPagina() {
+    TablaEstandarJanus.mostrarCarga();
+    
+    // PERSONALIZAR ESTA FUNCIÓN PARA CADA PÁGINA
+    enviarPeticion('[CONTROLADOR]', '[METODO]', {}, function(respuesta) {
+        if (respuesta.success && respuesta.data) {
+            TablaEstandarJanus.cargarDatos(respuesta.data);
+        } else {
+            console.error('Error al cargar datos:', respuesta.message);
+            TablaEstandarJanus.cargarDatos([]);
+        }
+    });
+}
+
+// Funciones personalizadas para las acciones
+function verDetalle(id) {
+    // IMPLEMENTAR LÓGICA ESPECÍFICA
+    console.log('Ver detalle:', id);
+}
+
+function editarRegistro(id) {
+    // IMPLEMENTAR LÓGICA ESPECÍFICA
+    console.log('Editar registro:', id);
+}
+</script>

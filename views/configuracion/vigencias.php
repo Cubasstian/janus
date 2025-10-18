@@ -2,35 +2,62 @@
 
 <div class="content-wrapper">
     <section class="content-header">
-        <div class="container">
-            <div class="row mb-2">
-                <div class="col-sm-6">
-                    <h1>
-                        Vigencias
-                        <button id="botonMostrarModalVigencias" type="button" class="btn btn-primary">
-                            Crear
-                        </button>
-                    </h1>
-                </div>
-                <div class="col-sm-6">
-                    <ol class="breadcrumb float-sm-right">
-                        <li class="breadcrumb-item"><a href="solicitudes/missolicitudes/">Inicio</a></li>
-                        <li class="breadcrumb-item active">Vigencias</li>
-                    </ol>
-                </div>
-            </div>
+        <div class="container-fluid">
+            <!-- Header limpio sin títulos ni breadcrumbs -->
         </div>
     </section>
     <section class="content">
-        <div class="container">
+        <div class="container-fluid">
             <div class="row">
-                <div class="col">
-                    <div class="card">
+                <div class="col-12">
+                    <div class="card card-kit">
+                        <div class="card-header card-header-clean">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h3 class="card-title mb-0">
+                                    <i class="fas fa-calendar-check"></i>
+                                    Gestión de Vigencias
+                                </h3>
+                                <button id="botonMostrarModalVigencias" type="button" class="btn-kit btn-kit-secondary">
+                                    <i class="fas fa-plus mr-1"></i>
+                                    Crear Vigencia
+                                </button>
+                            </div>
+                        </div>
                         <div class="card-body">
+                            <!-- Filtros personalizados -->
+                            <div class="row mb-4">
+                                <div class="col-md-4">
+                                    <div class="form-group-kit">
+                                        <label for="filtroEstado">Filtrar por Estado</label>
+                                        <select class="input-kit" id="filtroEstado">
+                                            <option value="">Todos los estados</option>
+                                            <option value="Activo">Activo</option>
+                                            <option value="Cancelado">Cancelado</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group-kit">
+                                        <label for="filtroVigencia">Buscar por Vigencia</label>
+                                        <input type="text" class="input-kit" id="filtroVigencia" placeholder="Ej: 2024">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group-kit">
+                                        <label>&nbsp;</label>
+                                        <div>
+                                            <button type="button" class="btn-kit btn-kit-secondary w-100" id="limpiarFiltros">
+                                                Limpiar Filtros
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <div class="table-responsive">
-                                <table id="tabla" class="table table-bordered table-striped">
+                                <table id="tabla" class="data-table">
                                     <thead>
-                                        <tr class="text-center">
+                                        <tr>
                                             <th>Vigencia</th>                                            
                                             <th>Estado</th>
                                             <th>Opciones</th>
@@ -46,33 +73,45 @@
         </div>
     </section>
 
-    <div class="modal fade" id="modalVigencias">
-        <div class="modal-dialog">
+    <!-- Modal para crear/editar vigencias -->
+    <div class="modal fade" id="modalVigencias" tabindex="-1" aria-labelledby="modalVigenciasLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h4 class="modal-title" id="modalVigenciasTitulo"></h4>
+                    <h5 class="modal-title" id="modalVigenciasTitulo">Gestión de Vigencia</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
                 <div class="modal-body">
                     <form id="formularioVigencias">
-                        <div class="form-group">
-                            <label for="vigencia">Vigencia</label>
-                            <input type="text" class="form-control" name="vigencia" id="vigencia" required="required">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group-kit">
+                                    <label for="vigencia">Vigencia</label>
+                                    <input type="text" class="input-kit" name="vigencia" id="vigencia" required>
+                                </div>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label for="estado">Estado</label>
-                            <select class="form-control" name="estado" id="estado" required="required">
-                                <option value="Activo">Activo</option>
-                                <option value="Cancelado">Cancelado</option>
-                            </select>
+                        
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group-kit">
+                                    <label for="estado">Estado</label>
+                                    <select class="input-kit" name="estado" id="estado" required>
+                                        <option value="">Seleccione un estado</option>
+                                        <option value="Activo">Activo</option>
+                                        <option value="Cancelado">Cancelado</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="submit" class="btn btn-success btn-submit" id="botonGuardarVigencias" form="formularioVigencias">Guardar</button>
-                    <button type="submit" class="btn btn-secondary btn-submit" id="botonActualizarVigencias" form="formularioVigencias">Actualizar</button>
+                    <button type="button" class="btn-kit btn-kit-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn-kit btn-kit-primary" id="botonGuardarVigencias" form="formularioVigencias">Guardar</button>
+                    <button type="submit" class="btn-kit btn-kit-primary" id="botonActualizarVigencias" form="formularioVigencias">Actualizar</button>
                 </div>
             </div>
         </div>
@@ -87,6 +126,11 @@
     function init(info){
         //Cargar registro
         cargarRegistros({info:{1:1}, nodefault:1}, 'crear', function(){
+            // Verificar si DataTable ya existe y destruirlo
+            if ($.fn.DataTable.isDataTable('#tabla')) {
+                $('#tabla').DataTable().destroy();
+            }
+            
             $("#tabla").DataTable({
                 "lengthMenu": [ 50, 100, 200 ],
                 "pageLength": 50,
@@ -158,25 +202,35 @@
                 'Cancelado': 'danger'
             }
             r.data.map(registro => {
-                fila += `<tr id=${registro.id}>
-                            <td>${registro.vigencia}</td>
-                            <td class="text-center">
-                                <span class="badge badge-${colores[registro.estado]}">
+                fila += `<tr class="table-row-modern" id=${registro.id}>
+                            <td class="align-middle">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-calendar-day text-muted mr-2"></i>
+                                    <span>${registro.vigencia}</span>
+                                </div>
+                            </td>
+                            <td class="text-center align-middle">
+                                <span class="badge badge-${colores[registro.estado]} badge-pill px-3">
+                                    <i class="fas fa-${registro.estado === 'Activo' ? 'check' : 'times'} mr-1"></i>
                                     ${registro.estado}
                                 </span>
                             </td>
-                            <td>
-                                <button class="btn btn-default" onClick="mostrarModalEditarVigencias(${registro.id})" title="Editar">
-                                    <i class="fas fa-edit"></i>
+                            <td class="text-center align-middle">
+                                <button class="btn btn-outline-dark btn-action" onClick="mostrarModalEditarVigencias(${registro.id})" title="Editar vigencia" data-toggle="tooltip">
+                                    <i class="fas fa-edit text-dark"></i>
                                 </button>
                             </td>
                         </tr>`
             })            
             if(accion == 'crear'){
-                $('#contenido').append(fila)    
+                $('#contenido').html(fila)  // Cambié append() por html() para evitar duplicados    
             }else{
                 $('#'+r.data[0].id).replaceWith(fila)
             }
+            
+            // Inicializar tooltips
+            $('[data-toggle="tooltip"]').tooltip()
+            
             callback()
         })
     }

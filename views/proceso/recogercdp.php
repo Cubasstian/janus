@@ -2,7 +2,7 @@
 
 <div class="content-wrapper">
     <section class="content-header">
-        <div class="container">
+        <div class="container-fluid">
             <div class="row mb-2">
                 <div class="col-sm-6">
                     <h1>
@@ -23,7 +23,7 @@
     </section>
 
     <section class="content">
-        <div class="container">
+        <div class="container-fluid">
             <div class="row">   
                 <div class="col">
                     <div class="card">
@@ -54,6 +54,10 @@
 
 <script src="dist/js/solicitudes.js"></script>
 <script type="text/javascript">
+    // Variables globales para mostrarDetalle
+    var estados = ['','Ocupar necesidad', 'Gestión documentación', 'Crear tercero', 'Expedir CDP', 'Ficha de requerimiento', 'CIIP', 'Examen preocupacional', 'Validación perfil', 'Recoger validación perfil', 'Minuta', 'Numerar contrato', 'Solicitud de afiliación', 'Afiliar ARL', 'Expedir RP', 'Recoger RP', 'Designar supervisor', 'Acta de inicio', 'Contratado', 'Anulado'];
+    var colores = ['secondary','secondary','secondary','secondary','secondary','secondary','secondary','secondary','secondary','secondary','secondary','secondary','secondary','secondary','secondary','secondary','secondary','success', 'danger'];
+
     function init(info){
         //Cargar registros
         cargarRegistros({criterio: 'area', estado: 6}, function(){
@@ -99,7 +103,7 @@
                             </td>
                         </tr>`
             })
-            $('#contenido').append(fila)
+            $('#contenido').html(fila)  // Cambié append() por html() para evitar duplicados
             callback()
             $('#conteo_total').text(`Total: ${r.data.length || 0}`)
         })

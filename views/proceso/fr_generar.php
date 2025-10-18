@@ -1,7 +1,14 @@
 <?php
 require_once "controllers/procesos.php";
 require_once "controllers/necesidadesImputaciones.php";
-require_once "vendor/fpdf186/fpdf.php";
+require_once __DIR__ . "/../../libs/pdf_emcali.php";
+// Config PDF
+$cfgPdf = [];
+$cfgPath = __DIR__ . '/../../config/pdf.php';
+if(file_exists($cfgPath)){
+	$tmp = include $cfgPath;
+	if(is_array($tmp)) $cfgPdf = $tmp;
+}
 session_start();
 
 //Datos de la solicitud
@@ -13,28 +20,47 @@ $proceso = $obj->getFR($datos);
 
 /*print_r($proceso);
 exit();*/
-class PDF extends FPDF
-{
-    function Footer()
-    {
-        // Go to 1.5 cm from bottom
-        $this->SetY(-15);
-        // Select Arial italic 8
-        $this->SetFont('Arial', 'I', 8);
-        // Print centered page number
-        $this->Cell(40,5,utf8_decode('Generó:'));
-		$this->Cell(90,5,$_SESSION['usuario']['login'],0,1);
-		$this->Cell(40,3,utf8_decode('Fecha de generación:'));
-		$this->Cell(90,3,date("Y-m-d H:i:s"),0,1);
-    }
-}
+// Usar helper reutilizable con encabezado/pie estándar
 
-$pdf = new PDF();
+$pdf = new PDF_Emcali();
+$pdf->title = 'FICHA DE REQUERIMIENTO';
+// Resolver ruta de logo relativa a este archivo
+$logoPath = __DIR__.'/../../img/logoEmcali.png';
+if(file_exists($logoPath)){
+    $pdf->logoPath = $logoPath;
+}
+if(isset($_SESSION['usuario']['login'])){
+	$pdf->showUserInFooter = true;
+	$pdf->userLabel = (string)$_SESSION['usuario']['login'];
+}
+$pdf->AliasNbPages();
 $pdf->AddPage();
 $pdf->SetFont('Arial','B',9);
 
-//Encabezado
-$pdf->Image('dist/img/logoEmcali.png', 10, 12, -200);
+// Sello de Aprobado (configurable)
+if(isset($proceso['data'][0]['estado'])){
+	$estado = (int)$proceso['data'][0]['estado'];
+	$minEstado = isset($cfgPdf['stamps']['fr_aprobado_min_estado']) ? (int)$cfgPdf['stamps']['fr_aprobado_min_estado'] : 13;
+	if($estado >= $minEstado){
+		$box = isset($cfgPdf['stamps']['box']) ? $cfgPdf['stamps']['box'] : ['x'=>135,'y'=>20,'w'=>65,'h'=>18];
+		$color = isset($cfgPdf['stamps']['color']) ? $cfgPdf['stamps']['color'] : ['r'=>0,'g'=>128,'b'=>0];
+		$tcolor = isset($cfgPdf['stamps']['textColor']) ? $cfgPdf['stamps']['textColor'] : ['r'=>0,'g'=>100,'b'=>0];
+		$title = isset($cfgPdf['stamps']['title']) ? (string)$cfgPdf['stamps']['title'] : 'APROBADO';
+		$pdf->SetDrawColor($color['r'], $color['g'], $color['b']);
+		$pdf->SetTextColor($tcolor['r'], $tcolor['g'], $tcolor['b']);
+		$pdf->Rect($box['x'], $box['y'], $box['w'], $box['h']);
+		$pdf->SetFont('Arial','B',12);
+		$pdf->SetXY($box['x'], $box['y']+2);
+		$pdf->Cell($box['w'],6,utf8_decode($title),0,2,'C');
+		$pdf->SetFont('Arial','',8);
+		$usr = isset($_SESSION['usuario']['login']) ? (string)$_SESSION['usuario']['login'] : '';
+		$pdf->Cell($box['w'],4,utf8_decode('Fecha: ').date('Y-m-d'),0,2,'C');
+		if($usr!=='') $pdf->Cell($box['w'],4,utf8_decode('Usuario: ').$usr,0,2,'C');
+		$pdf->SetTextColor(0,0,0);
+	}
+}
+
+// Encabezado (texto principal)
 $pdf->Cell(20,20,'',1);
 $pdf->Cell(170,6,'FICHA DE REQUERIMIENTO',1,1,'C');
 $pdf->Cell(20,20,'',0);
@@ -118,6 +144,21 @@ $pdf->Cell(190,5,utf8_decode('INFORMACIÓN AMPLIADA DEL REQUERIMIENTO'),1,1,'C')
 $pdf->SetFont('Arial','',6);
 $pdf->Cell(190,5,utf8_decode('JUSTIFICACIÓN DE LA NECESIDAD'),1,1);
 $pdf->MultiCell(190,3,utf8_decode($proceso['data'][0]['justificacion']),1,'J');
+
+// Firmas y nota
+$pdf->Ln(10);
+$colW = 90; $rowH = 8;
+$pdf->SetFont('Arial','',10);
+$pdf->Cell($colW, $rowH, '', 'T', 0, 'C');
+$pdf->Cell(10, $rowH, '');
+$pdf->Cell($colW, $rowH, '', 'T', 1, 'C');
+$pdf->SetFont('Arial','B',10);
+$pdf->Cell($colW, 6, utf8_decode('Solicitante'), 0, 0, 'C');
+$pdf->Cell(10, 6, '');
+$pdf->Cell($colW, 6, utf8_decode('Vo. Bo. Gerencia'), 0, 1, 'C');
+$pdf->Ln(4);
+$pdf->SetFont('Arial','I',8);
+$pdf->MultiCell(0,4,utf8_decode('Nota: La presente ficha de requerimiento sirve como insumo para la contratación y no constituye por sí misma una obligación contractual.'));
 
 $pdf->Output();
 ?>

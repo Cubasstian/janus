@@ -2,7 +2,7 @@
 
 <div class="content-wrapper">
     <section class="content-header">
-        <div class="container">
+        <div class="container-fluid">
             <div class="row mb-2">
                 <div class="col-sm-6">
                     <h1>
@@ -24,13 +24,19 @@
     </section>
 
     <section class="content">
-        <div class="container">
+        <div class="container-fluid">
             <div class="row">
                 <div class="col">
-                    <div class="card card-outline card-success">
+                    <div class="card card-kit">
+                        <div class="card-header card-header-clean">
+                            <h3 class="card-title">
+                                <i class="fas fa-user"></i>
+                                Información del Contratista
+                            </h3>
+                        </div>
                         <div class="card-body">
                             <div class="table-responsive">
-                                <table class="table table-bordered">
+                                <table class="data-table">
                                     <thead>
                                         <tr>
                                             <th>Proceso</th>
@@ -54,12 +60,18 @@
         <div class="container-fluid">
             <div class="row">
                 <div class="col">
-                    <div class="card">
+                    <div class="card card-kit">
+                        <div class="card-header card-header-clean">
+                            <h3 class="card-title">
+                                <i class="fas fa-clipboard-list"></i>
+                                Necesidades Disponibles
+                            </h3>
+                        </div>
                         <div class="card-body">
                             <div class="table-responsive">
-                                <table id="tabla" class="table table-bordered text-xs">
+                                <table id="tabla" class="data-table">
                                     <thead>
-                                        <tr class="text-center">
+                                        <tr>
                                             <th>ID</th>
                                             <th>Dependencia</th>
                                             <th>Profesión</th>
@@ -103,7 +115,7 @@
                         <td>${r.data[0].cedula}</td>
                         <td>${r.data[0].telefono}</td>
                         <td>
-                            <button type="button" class="btn btn-default" onClick="mostrarDocumento(${r.data[0].idPS},1,2)" title="Ver hoja de vida">
+                            <button type="button" class="btn-kit btn-kit-outline-success btn-sm" onClick="mostrarDocumento(${r.data[0].idPS},1,2)" title="Ver hoja de vida">
                                 <i class="fas fa-file-import"></i>
                             </button>
                         </td>
@@ -113,6 +125,11 @@
 
         //Cargar registros de necesidades
         cargarRegistros({criterio: 'libres'}, function(){
+            // Verificar si DataTable ya está inicializado
+            if ($.fn.DataTable.isDataTable('#tabla')) {
+                $('#tabla').DataTable().destroy();
+            }
+            
             $("#tabla").DataTable({
                 "lengthMenu": [ 50, 100, 200 ],
                 "pageLength": 50,
@@ -163,13 +180,13 @@
                             <td class="text-right">$${currency(registro.presupuesto,0)}</td>
                             <td>${registro.tiempo}</td>
                             <td>
-                                <button class="btn btn-default" onClick="asignar(${registro.id})" title="Asignar">
+                                <button type="button" class="btn-kit btn-kit-outline-primary btn-sm" onClick="asignar(${registro.id})" title="Asignar vacante">
                                     <i class="fas fa-user-tag"></i>
                                 </button>
                             </td>
                         </tr>`
             })
-            $('#contenidoNecesidades').append(fila)
+            $('#contenidoNecesidades').html(fila) // Cambié append() por html() para evitar duplicados
             callback()
         })
     }
@@ -177,11 +194,13 @@
     function asignar(idVacante){
         Swal.fire({
             icon: 'question',
-            title: 'Confirmación',
-            html: `Esta seguro de asignar la vacante con ID #${idVacante} a ${ps}`,
+            title: 'Confirmar Asignación',
+            html: `¿Está seguro de asignar la vacante <strong>#${idVacante}</strong> a <strong>${ps}</strong>?`,
             showCancelButton: true,
-            confirmButtonText: 'Aceptar',
-            cancelButtonText: 'Cancelar'
+            confirmButtonText: '<i class="fas fa-check mr-1"></i>Asignar',
+            cancelButtonText: '<i class="fas fa-times mr-1"></i>Cancelar',
+            confirmButtonColor: '#28a745',
+            cancelButtonColor: '#6c757d'
         }).then((result) => {
             if(result.value){
                 let datos = {

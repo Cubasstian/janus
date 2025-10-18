@@ -27,7 +27,8 @@ class database extends mysqli{
 	public function select($tabla, $datos){
 		$sql = "SELECT * FROM $tabla WHERE 1";
 		foreach ($datos['info'] as $key => $value) {
-			$sql .= " AND $key = '$value'";
+			$val = is_null($value) ? 'NULL' : "'".$this->real_escape_string($value)."'";
+			$sql .= " AND $key = $val";
 		}
 		if(isset($datos['nodefault'])){
 			$sql .= " AND id != 1";
@@ -63,9 +64,10 @@ class database extends mysqli{
 	}
 
 	public function cantidad($tabla, $datos){
-		$sql = "SELECT COUNT(1) AS cantidad	FROM $tabla WHERE 1";
+		$sql = "SELECT COUNT(1) AS cantidad\tFROM $tabla WHERE 1";
 		foreach ($datos['info'] as $key => $value) {
-			$sql .= " AND $key = '$value'";
+			$val = is_null($value) ? 'NULL' : "'".$this->real_escape_string($value)."'";
+			$sql .= " AND $key = $val";
 		}
 		if(isset($datos['nodefault'])){
 			$sql .= " AND id != 1";
@@ -117,5 +119,79 @@ class database extends mysqli{
 					];
 			}
 		}
+	}
+
+	// Nuevo: ejecutar consulta preparada con tipos y parámetros
+	// $types: string de tipos (ej: 'i', 's', 'd', 'b'), $params: array de valores
+	public function ejecutarPreparado($sql, $types = '', $params = [], $cerrar = true){
+		$respuesta = [];
+		try{
+			$stmt = $this->prepare($sql);
+			if(!$stmt){
+				return [ 'ejecuto' => false, 'codigoError' => $this->errno, 'mensajeError' => $this->error ];
+			}
+			if($types && !empty($params)){
+				// Asegurar referencias para bind_param
+				$bindParams = [];
+				$bindParams[] = & $types;
+				foreach($params as $k => $v){ $bindParams[] = & $params[$k]; }
+				call_user_func_array([$stmt, 'bind_param'], $bindParams);
+			}
+			if(!$stmt->execute()){
+				$respuesta = [ 'ejecuto' => false, 'codigoError' => $stmt->errno, 'mensajeError' => $stmt->error ];
+			}else{
+				// Distinguir SELECT vs no-SELECT
+				if($stmt->field_count > 0){
+					// Intentar get_result (mysqlnd). Si no, fallback manual.
+					if(method_exists($stmt, 'get_result')){
+						$result = $stmt->get_result();
+						$data = [];
+						while($row = $result->fetch_assoc()){ $data[] = $row; }
+						$result->free();
+						$respuesta = [ 'ejecuto' => true, 'data' => $data ];
+					}else{
+						$meta = $stmt->result_metadata();
+						$fields = [];
+						$row = [];
+						$bind = [];
+						while($field = $meta->fetch_field()){
+							$fields[] = $field->name;
+							$row[$field->name] = null;
+							$bind[] = & $row[$field->name];
+						}
+						call_user_func_array([$stmt, 'bind_result'], $bind);
+						$data = [];
+						while($stmt->fetch()){
+							$data[] = array_map(function($v){ return $v; }, $row);
+						}
+						$respuesta = [ 'ejecuto' => true, 'data' => $data ];
+					}
+				}else{
+					$respuesta = [ 'ejecuto' => true, 'insertId' => $stmt->insert_id, 'affectedRows' => $stmt->affected_rows ];
+				}
+			}
+			$stmt->close();
+			if($cerrar){ $this->close(); }
+			return $respuesta;
+		}catch(Exception $e){
+			return [ 'ejecuto' => false, 'codigoError' => 1000, 'mensajeError' => 'Error al ejecutar consulta preparada', 'mensajeReal' => $e->getMessage() ];
+		}
+	}
+
+	// Ejecuta varias consultas preparadas secuencialmente reutilizando la misma conexión.
+	// $consultas: array de ['sql'=>..., 'types'=>..., 'params'=>array]
+	// Retorna array indexado con la respuesta de cada ejecutarPreparado.
+	public function ejecutarPreparados(array $consultas){
+		$resultados = [];
+		$lastIndex = count($consultas) - 1;
+		foreach($consultas as $i => $c){
+			$sql = isset($c['sql']) ? $c['sql'] : '';
+			$types = isset($c['types']) ? $c['types'] : '';
+			$params = isset($c['params']) ? $c['params'] : [];
+			// Solo la última cierra la conexión
+			$resultados[$i] = $this->ejecutarPreparado($sql, $types, $params, $i === $lastIndex);
+			// Si alguna falla, opcionalmente podríamos romper; por ahora continuamos para devolver todo.
+		}
+		return $resultados;
 	}
 }

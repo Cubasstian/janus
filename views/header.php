@@ -1,3 +1,4 @@
+<?php session_start(); ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -28,37 +29,57 @@
     <link rel="stylesheet" href="plugins/datatables-bs4/css/dataTables.bootstrap4.css">
     <!-- Theme style -->
     <link rel="stylesheet" href="dist/css/adminlte.min.css">
+    <!-- Kit UI - Sistema de Diseño Janus -->
+    <link rel="stylesheet" href="dist/css/kit-ui.css">
     <!-- Google Font: Source Sans Pro -->
     <!--link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet"-->
     <!-- Personalizado -->
     <link rel="stylesheet" href="dist/css/principal.css">
+    <!-- Sistema de Tabla Estándar Janus -->
+    <link rel="stylesheet" href="dist/css/tabla-procesos-estandar.css">
 </head>
 <body class="hold-transition sidebar-mini layout-fixed">
+    <!-- Loading Overlay Global - Spinner con fondo difuminado -->
+    <div id="globalLoadingOverlay" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(3px); z-index: 9999; display: flex; align-items: center; justify-content: center;">
+        <div class="spinner-border" role="status" style="width: 3rem; height: 3rem; color: #518711; border-width: 0.3em;">
+            <span class="sr-only">Cargando...</span>
+        </div>
+    </div>
+    <style>
+        /* Animación de spinner personalizada */
+        .spinner-border {
+            animation: spinner-border 0.75s linear infinite;
+        }
+        @keyframes spinner-border {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+    
     <div class="wrapper">
-        <nav class="main-header navbar navbar-expand navbar-light">
+        <nav class="main-header navbar navbar-expand" style="background: white; border-bottom: 2px solid #000;">
             <ul class="navbar-nav">
                 <li class="nav-item">
-                    <a class="nav-link" data-widget="pushmenu" href="#" role="button">
+                    <a class="nav-link" data-widget="pushmenu" href="#" role="button" style="color: #000;">
                         <i class="fas fa-bars"></i>
                     </a>
                 </li>
             </ul>
             <ul class="navbar-nav ml-auto">
                 <li class="nav-item">
-                    <img src="dist/img/pajaro.png" style=/>
+                    <img src="dist/img/pajaro.png" style="height: 30px; width: auto;"/>
                 </li>
                 <li class="nav-item dropdown">
-                    <a class="nav-link" data-toggle="dropdown" href="#" aria-expanded="false">
+                    <a class="nav-link" data-toggle="dropdown" href="#" aria-expanded="false" style="color: #000;">
                         <i class="fas fa-user"></i>
                         <span id="menu_user"></span>
                     </a>
-                    <div class="dropdown-menu dropdown-menu-right" style="left: inherit; right: 0px;">                        
-                        <a href="main/perfil/" class="dropdown-item">
+                    <div class="dropdown-menu dropdown-menu-right" style="left: inherit; right: 0px; border: 2px solid #000; border-radius: 5px;">                        
+                        <a href="main/perfil/" class="dropdown-item" style="color: #000;">
                             <i class="fas fa-user-edit mr-2"></i>
                             Perfil
                         </a>
-                        <div class="dropdown-divider"></div>
-                        <a href="#" class="dropdown-item" id="salir">
+                        <div class="dropdown-divider" style="border-color: #000;"></div>
+                        <a href="#" class="dropdown-item" id="salir" style="color: #000;">
                             <i class="fas fa-sign-out-alt mr-2"></i>
                             Salir                            
                         </a>
@@ -66,12 +87,11 @@
                 </li>
             </ul>
         </nav>
-        <aside class="main-sidebar elevation-4 sidebar-light-warning">
-            <a href="main/inicio/" class="brand-link elevation-2 navbar-success">
-                <img src="dist/img/logote.png" alt="AdminLTE Logo" class="brand-image img-circle elevation-4" style="opacity: .8">
-                <span class="brand-text font-weight-light text-white"><b>JANUS</b></span>
+        <aside class="main-sidebar elevation-4" style="background: white; border-right: 2px solid #000;">
+            <a href="main/inicio/" class="brand-link elevation-2" style="background: white; border-bottom: 2px solid #000; padding: 10px; display: flex; align-items: center; justify-content: center; height: 57px; overflow: hidden;">
+                <img src="dist/img/logo-emcali.webp" alt="EMCALI Logo" class="brand-image" style="width: 130px; height: 130px; object-fit: contain; max-width: 100%; max-height: 100%;">
             </a>
-            <div class="sidebar">
+            <div class="sidebar" style="background: white; padding-top: 10px;">
                 <nav class="mt-2">
                     <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false" id="menu"></ul>
                 </nav>
