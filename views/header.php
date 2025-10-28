@@ -37,6 +37,35 @@
     <link rel="stylesheet" href="dist/css/principal.css">
     <!-- Sistema de Tabla Estándar Janus -->
     <link rel="stylesheet" href="dist/css/tabla-procesos-estandar.css">
+    <!-- Janus specific layout overrides (after sidebar-custom.css) -->
+    <style>
+        /* Desactiva las clases de AdminLTE para que no rompan el diseño ShadCN */
+        .sidebar-mini .main-sidebar, .sidebar-mini .main-sidebar::before {
+            width: 280px !important; 
+        }
+        .main-sidebar, .main-sidebar::before {
+            transition: none !important; 
+        }
+        .sidebar-mini.sidebar-collapse .main-sidebar {
+            margin-left: -280px !important; 
+        }
+        .sidebar-mini.sidebar-collapse .main-header {
+            margin-left: 0 !important; 
+        }
+        .sidebar-mini:not(.sidebar-collapse) .content-wrapper,
+        .sidebar-mini:not(.sidebar-collapse) .main-footer {
+            margin-left: 280px !important; 
+        }
+        /* Eliminar scrollbar de AdminLTE y asegurar la altura del contenido */
+        .sidebar .os-viewport, .main-sidebar .sidebar { 
+            height: 100%; 
+            overflow-y: auto !important; 
+            padding: 0 !important; 
+        }
+        .sidebar .os-host-scrollbar-horizontal, .sidebar .os-host-scrollbar-vertical { 
+            display: none; 
+        }
+    </style>
 </head>
 <body class="hold-transition sidebar-mini layout-fixed">
     <!-- Loading Overlay Global - Spinner con fondo difuminado -->
@@ -54,46 +83,39 @@
             to { transform: rotate(360deg); }
         }
     </style>
+    <!-- Sidebar custom overrides loaded after principal.css to avoid breaking behavior -->
+    <link rel="stylesheet" href="dist/css/sidebar-custom.css">
     
     <div class="wrapper">
-        <nav class="main-header navbar navbar-expand" style="background: white; border-bottom: 2px solid #000;">
-            <ul class="navbar-nav">
-                <li class="nav-item">
-                    <a class="nav-link" data-widget="pushmenu" href="#" role="button" style="color: #000;">
-                        <i class="fas fa-bars"></i>
-                    </a>
-                </li>
-            </ul>
-            <ul class="navbar-nav ml-auto">
-                <li class="nav-item">
-                    <img src="dist/img/pajaro.png" style="height: 30px; width: auto;"/>
-                </li>
-                <li class="nav-item dropdown">
-                    <a class="nav-link" data-toggle="dropdown" href="#" aria-expanded="false" style="color: #000;">
-                        <i class="fas fa-user"></i>
-                        <span id="menu_user"></span>
-                    </a>
-                    <div class="dropdown-menu dropdown-menu-right" style="left: inherit; right: 0px; border: 2px solid #000; border-radius: 5px;">                        
-                        <a href="main/perfil/" class="dropdown-item" style="color: #000;">
-                            <i class="fas fa-user-edit mr-2"></i>
-                            Perfil
-                        </a>
-                        <div class="dropdown-divider" style="border-color: #000;"></div>
-                        <a href="#" class="dropdown-item" id="salir" style="color: #000;">
-                            <i class="fas fa-sign-out-alt mr-2"></i>
-                            Salir                            
-                        </a>
-                    </div>
-                </li>
-            </ul>
-        </nav>
-        <aside class="main-sidebar elevation-4" style="background: white; border-right: 2px solid #000;">
-            <a href="main/inicio/" class="brand-link elevation-2" style="background: white; border-bottom: 2px solid #000; padding: 10px; display: flex; align-items: center; justify-content: center; height: 57px; overflow: hidden;">
-                <img src="dist/img/logo-emcali.webp" alt="EMCALI Logo" class="brand-image" style="width: 130px; height: 130px; object-fit: contain; max-width: 100%; max-height: 100%;">
-            </a>
-            <div class="sidebar" style="background: white; padding-top: 10px;">
-                <nav class="mt-2">
-                    <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false" id="menu"></ul>
+        <!-- main header intentionally removed per user request; keep pushmenu accessible via sidebar header or other controls -->
+    <aside class="main-sidebar janus-sidebar elevation-4">
+            
+            <div class="janus-logo-container">
+                <a href="main/inicio/" class="janus-brand-link">
+                    <img src="dist/img/logo-emcali.webp" alt="Logo EMCALI" class="janus-brand-image">
+                </a>
+            </div>
+
+            <div class="janus-sidebar-content">
+                <nav class="janus-menu-nav">
+                    <ul class="janus-menu" id="janus-menu-dynamic">
+                        </ul>
                 </nav>
             </div>
+
+            <div class="janus-user-footer" id="janus-user-footer">
+                <div class="janus-user-avatar" id="sidebar_avatar">J</div>
+                <div class="janus-user-info">
+                    <span class="janus-user-name" id="sidebar_user"></span>
+                    <span class="janus-user-role" id="sidebar_role"></span>
+                </div>
+                <i class="fas fa-sort janus-user-dropdown-icon"></i>
+
+                <!-- Collapsible user submenu (appears above the footer) -->
+                <ul class="janus-user-submenu" id="janus-user-submenu">
+                    <li><a href="main/perfil/" class="janus-user-action"><i class="fas fa-user mr-2"></i>Mi Perfil</a></li>
+                    <li><a href="#" id="salir_sidebar" class="janus-user-action"><i class="fas fa-sign-out-alt mr-2"></i>Cerrar Sesión</a></li>
+                </ul>
+            </div>
+            
         </aside>

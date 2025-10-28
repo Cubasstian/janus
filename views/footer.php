@@ -45,6 +45,145 @@
 <script src="dist/js/funciones.js"></script>
 
 <script type="text/javascript">
+
+// Helper: generate a stable menu id from a link element or text
+function generateMenuId(linkElement) {
+    try {
+        // linkElement may be a jQuery object; try to extract visible text
+        var $el = $(linkElement);
+        var text = $el.find('p').clone().children().remove().end().text().trim();
+        if(!text) text = $el.text().trim();
+        if(!text) text = 'menu';
+        return 'menu_' + text.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+    } catch(e) {
+        var t = ('' + linkElement).trim() || 'menu';
+        return 'menu_' + t.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+    }
+}
+
+function transformAdminLTEMenuToJanus(adminLTEMenuHTML, role) {
+    const tempDiv = $('<div>').html(adminLTEMenuHTML);
+    const janusMenu = $('<ul>').addClass('janus-menu');
+    
+    // Lista de ítems simples que aparecen al final (Reportes, Buscar, etc.)
+    const simpleItems = ['Reportes', 'Buscar', 'Información personal', 'Documentación'];
+    
+    // Note: Do not add an extra 'Administrar' title — keep configuration/groups as normal menu items
+
+    // --- 2. LÓGICA DE GRUPOS DE MENÚ Y SIMPLES ---
+    // Preferred icon map: explicit mappings to the classes we know exist
+    // in the project's FontAwesome package. This avoids relying on
+    // automatic replacements that may point to Pro styles (fal) that aren't
+    // available. Add or tweak entries here for any icon you want outlined.
+    const ICON_PREFERRED_MAP = {
+        'fa-tools': 'fas fa-tools',
+        'fa-funnel-dollar': 'fas fa-funnel-dollar',
+        'fa-star': 'far fa-star',
+        'fa-users': 'fas fa-users',
+        'fa-stream': 'fas fa-stream',
+        'fa-chart-bar': 'fas fa-chart-bar',
+        'fa-search': 'fas fa-search',
+        'fa-user-edit': 'fas fa-user-edit',
+        'fa-clipboard-list': 'fas fa-clipboard-list',
+        'fa-sign-out-alt': 'fas fa-sign-out-alt',
+        'fa-user': 'fas fa-user'
+    };
+    tempDiv.find('> .nav-item').each(function() {
+        const $item = $(this);
+        const $link = $item.find('> .nav-link');
+        const linkText = $link.find('p').clone().children().remove().end().text().trim();
+        
+        // Si el ítem es simple (no tiene submenú y no es un grupo), lo manejamos de otra forma.
+        if (!simpleItems.includes(linkText) && $item.hasClass('has-treeview')) {
+            // Es un GRUPO desplegable (Configuración, Flujo, Imputaciones, Necesidades, Personas)
+            const iconClass = $link.find('i.fas, i.far, i.fal').attr('class') || '';
+            // Determine preferred icon class using the ICON_PREFERRED_MAP when possible.
+            let iconClassPreferred = iconClass;
+            try{
+                const found = (iconClass.match(/fa-[a-z0-9-]+/i) || [null])[0];
+                if(found && ICON_PREFERRED_MAP[found]){
+                    iconClassPreferred = ICON_PREFERRED_MAP[found];
+                } else {
+                    // fallback: prefer 'far' (regular) then 'fas'
+                    iconClassPreferred = iconClass.replace(/\b(fal|fas|fa-solid)\b/g, 'far').trim();
+                    if(!iconClassPreferred || iconClassPreferred === '') iconClassPreferred = iconClass.replace(/\b(fal|far|fa-solid)\b/g, 'fas').trim();
+                }
+            }catch(e){ iconClassPreferred = iconClass; }
+            const menuId = generateMenuId($link);
+            
+            // Build a proper group structure: <li><div.menu-group data-menu-id><div.menu-header>...</div><ul.submenu>...</ul></div></li>
+            const group = $('<li class="janus-menu-item"></li>');
+            const groupInner = $(`<div class="menu-group" data-menu-id="${menuId}"></div>`);
+
+            // Cabecera del Grupo (clickeable)
+            const header = $(`<div class="menu-header" data-toggle-id="${menuId}">
+                <i class="${iconClassPreferred}"></i>
+                <span>${linkText}</span>
+                <i class="fas fa-chevron-right dropdown-icon"></i>
+            </div>`);
+
+            // Submenú (ul.submenu)
+            const submenu = $('<ul class="submenu">');
+            $item.find('.nav-treeview > .nav-item > .nav-link').each(function() {
+                const $subLink = $(this);
+                const subTitle = $subLink.find('p').text().trim();
+                const subHref = $subLink.attr('href');
+
+                // Preserve submenu icon if present in original link; use ICON_PREFERRED_MAP
+                const subIconClass = $subLink.find('i.fas, i.far, i.fal').attr('class') || '';
+                var subIconPreferred = subIconClass;
+                try{
+                    const sfound = (subIconClass.match(/fa-[a-z0-9-]+/i) || [null])[0];
+                    // Do not render simple circle bullets in submenu (they look like bullets)
+                    if(sfound === 'fa-circle'){
+                        subIconPreferred = ''; // skip adding this icon
+                    } else if(sfound && ICON_PREFERRED_MAP[sfound]){
+                        subIconPreferred = ICON_PREFERRED_MAP[sfound];
+                    } else {
+                        subIconPreferred = subIconClass.replace(/\b(fal|fas|fa-solid)\b/g, 'far').trim() || subIconClass;
+                    }
+                }catch(e){ subIconPreferred = subIconClass; }
+                const linkEl = $('<a>').attr('href', subHref);
+                if(subIconPreferred) linkEl.append($('<i>').addClass(subIconPreferred));
+                linkEl.append(document.createTextNode(subTitle));
+                const listItem = $('<li>').append(linkEl);
+                submenu.append(listItem);
+            });
+
+            groupInner.append(header).append(submenu);
+            group.append(groupInner);
+            janusMenu.append(group);
+
+        } else if (simpleItems.includes(linkText) || (!$item.hasClass('has-treeview') && $link.length)) {
+            // Es un ÍTEM SIMPLE (Reportes, Buscar, o los de rol PS)
+            const iconClass = $link.find('i.fas, i.far, i.fal').attr('class') || '';
+            let iconClassPreferred = iconClass;
+            try{
+                const found = (iconClass.match(/fa-[a-z0-9-]+/i) || [null])[0];
+                if(found && ICON_PREFERRED_MAP[found]){
+                    iconClassPreferred = ICON_PREFERRED_MAP[found];
+                } else {
+                    iconClassPreferred = iconClass.replace(/\b(fal|fas|fa-solid)\b/g, 'far').trim();
+                    if(!iconClassPreferred || iconClassPreferred === '') iconClassPreferred = iconClass.replace(/\b(fal|far|fa-solid)\b/g, 'fas').trim();
+                }
+            }catch(e){ iconClassPreferred = iconClass; }
+            const href = $link.attr('href') || '#';
+            
+            const listItem = $(`<li class="janus-menu-item">
+                <a href="${href}" class="menu-header simple-link">
+                    <i class="${iconClassPreferred}"></i>
+                    <span>${linkText}</span>
+                </a>
+            </li>`);
+            janusMenu.append(listItem);
+        }
+    });
+    
+    // Keep original ordering produced by the AdminLTE menu; do not inject or reorder into a special 'Administrar' title.
+    
+    return janusMenu.html();
+}
+
 	$(function(){
         // Hook centralizado para mostrar mensajes de transición inválida
         window.mostrarError = function(resp){
@@ -62,6 +201,15 @@
                 window.location.href = 'main/login/'
             }else{
                 $('#menu_user').text(r.data.usuario.nombre)
+                // Populate Janus sidebar user info
+                $('#sidebar_user').text(r.data.usuario.nombre);
+                $('#sidebar_role').text((r.data.usuario.rol || '').toUpperCase());
+                // Avatar: use initials if available
+                const nombreParts = (r.data.usuario.nombre || 'J').split(' ');
+                const initials = (nombreParts[0] ? nombreParts[0].charAt(0) : 'J') + (nombreParts[1] ? nombreParts[1].charAt(0) : '');
+                $('#sidebar_avatar').text(initials.toUpperCase());
+
+                // (Header user block removed; sidebar footer will show user info)
                 let menu = ''
                 
                 // Menús principales
@@ -200,12 +348,28 @@
                     }
                 }
                 
-                $('#menu').html(menu)
-                
-                // Limpiar estados antiguos del menú que puedan estar corruptos
+                // Reemplaza la inyección en el viejo #menu por la transformación a Janus
+                let janusMenuHTML = transformAdminLTEMenuToJanus(menu, r.data.usuario.rol);
+                $('#janus-menu-dynamic').html(janusMenuHTML);
+
+                // Ensure any plain-text inside anchors gets wrapped so CSS can
+                // apply inline (text-width) hover. Call here because the menu is
+                // generated dynamically after the AJAX call.
+                if (typeof wrapJanusMenuText === 'function') wrapJanusMenuText();
+                // After wrapping, ensure icons that don't render with 'fal'/'far'
+                // fallback to visible variants. Run immediately and also after a
+                // short timeout and on window load to account for webfont loading.
+                if (typeof fixMissingIcons === 'function'){
+                    try{ fixMissingIcons(); }catch(e){}
+                    setTimeout(function(){ try{ fixMissingIcons(); }catch(e){} }, 160);
+                    // also run after window load in case fonts arrive later
+                    $(window).on('load', function(){ try{ fixMissingIcons(); }catch(e){} });
+                }
+
+                // Limpiar estados antiguos del menú que puedan estar corruptos (si aplica)
                 cleanupMenuState();
-                
-                // Funcionalidades del menú mejoradas
+
+                // Funcionalidades del menú mejoradas (nueva estructura)
                 setupMenuEnhancements()
                 
                 // Ocultar loading overlay después de que todo esté cargado
@@ -221,6 +385,15 @@
                         window.location.href = 'main/login/'
                     })
                 })
+                // Sidebar logout action (in footer)
+                $('#salir_sidebar').on('click', function(e){
+                    e.preventDefault();
+                    clearMenuState();
+                    enviarPeticion('helpers', 'destroySession', {1:1}, function(r){
+                        window.location.href = 'main/login/'
+                    })
+                })
+                // header user block removed - no handler necessary here
             }
             if(typeof init === 'function'){
                 try{ init(r); }catch(e){ console.error('Error ejecutando init()', e); }
@@ -228,195 +401,180 @@
         })
     })
     
-    // Función para configurar mejoras del menú
-    function setupMenuEnhancements() {
-        const currentPath = window.location.pathname;
-        const menuState = JSON.parse(localStorage.getItem('janus_menu_state') || '{}');
+// --- NUEVAS FUNCIONES DE INTERACTIVIDAD ---
+
+// Función para marcar el elemento activo del menú
+function markActiveMenuItem(currentPath) {
+    $('.janus-menu a').removeClass('active');
+    
+    const routeMap = {
+        'inicio': 'a[href="main/inicio/"]', 
+        'usuarios': 'a[href="configuracion/usuarios/"]',
+        'ciudades': 'a[href="configuracion/ciudades/"]',
+        'vigencias': 'a[href="configuracion/vigencias/"]',
+        'honorarios': 'a[href="configuracion/honorarios/"]',
+        'imputaciones_gestionar': 'a[href="imputaciones/gestionar/"]',
+        'necesidades_gestionar': 'a[href="necesidades/gestionar/"]',
+        'necesidades_listar': 'a[href="necesidades/listar/"]',
+        'personas_gestionar': 'a[href="personas/gestionar/"]',
+        'ocuparNecesidad': 'a[href="proceso/ocuparNecesidad/"]',
+        'documentacion': 'a[href="proceso/documentacion/"]',
+        'crearTercero': 'a[href="proceso/crearTercero/"]',
+        'expedircdp': 'a[href="proceso/expedircdp/"]',
+        'fr': 'a[href="proceso/fr/"]',
+        'ciip': 'a[href="proceso/ciip/"]',
+        'eep_evaluar': 'a[href="proceso/eep_evaluar/"]',
+        'eed': 'a[href="proceso/eep_evaluar/"]',
+        'perfil': 'a[href="proceso/perfil/"]',
+        'minuta': 'a[href="proceso/minuta/"]',
+        'numerar': 'a[href="proceso/numerar/"]',
+        'arl': 'a[href="proceso/arl/"]',
+        'rp': 'a[href="proceso/rp/"]',
+        'supervisor': 'a[href="proceso/supervisor/"]',
+        'actaInicio': 'a[href="proceso/actaInicio/"]',
+        'resumen': 'a[href="proceso/resumen/"]',
+        'diagnostico': 'a[href="proceso/diagnostico/"]',
+        'buscar': 'a[href="solicitudes/buscar/"]',
+        'informacion': 'a[href="ps/informacion/"]',
+        'documentos': 'a[href="ps/documentos/"]'
+    };
+    
+    // Lógica mejorada para determinar la página actual
+    let selector = null;
+    const pathParts = currentPath.split('/').filter(x => x);
+    
+    if (pathParts.length >= 2) {
+        const module = pathParts[pathParts.length - 2];
+        const page = pathParts[pathParts.length - 1];
         
-        // Asignar IDs dinámicos a menús sin ID
-        $('.nav-item.has-treeview').each(function() {
-            const $this = $(this);
-            if (!$this.attr('id')) {
-                const menuId = generateMenuId($this.find('> .nav-link'));
-                $this.attr('id', menuId);
-            }
-        });
-        
-        // Restaurar menús abiertos (solo el último abierto para comportamiento acordeón)
-        const menuStateEntries = Object.entries(menuState);
-        if (menuStateEntries.length > 0) {
-            // Obtener solo el último menú que estaba abierto para comportamiento acordeón
-            const lastOpenMenu = menuStateEntries[menuStateEntries.length - 1];
-            const [menuId, state] = lastOpenMenu;
-            
-            if (state === 'open') {
-                const menuItem = $(`#${menuId}`);
-                if (menuItem.length) {
-                    menuItem.addClass('menu-open');
-                    menuItem.find('.nav-treeview').show();
-                }
-            }
-            
-            // Limpiar otros menús del estado para mantener solo uno
-            const cleanState = {};
-            cleanState[lastOpenMenu[0]] = lastOpenMenu[1];
-            localStorage.setItem('janus_menu_state', JSON.stringify(cleanState));
+        if (page === 'gestionar') {
+            if (module === 'imputaciones') selector = routeMap['imputaciones_gestionar'];
+            else if (module === 'necesidades') selector = routeMap['necesidades_gestionar'];
+            else if (module === 'personas') selector = routeMap['personas_gestionar'];
+        } else if (page === 'listar' && module === 'necesidades') {
+            selector = routeMap['necesidades_listar'];
         }
-        
-        // Marcar página activa
-        markActiveMenuItem(currentPath);
-        
-        // Guardar estado cuando se abre/cierra un menú
-        $('.nav-item.has-treeview > .nav-link').off('click.menuEnhancement').on('click.menuEnhancement', function(e) {
-            const parentItem = $(this).closest('.nav-item');
-            const menuId = parentItem.attr('id') || generateMenuId($(this));
-            
-            // Comportamiento acordeón: cerrar otros menús abiertos
-            const isCurrentlyOpen = parentItem.hasClass('menu-open');
-            
-            if (!isCurrentlyOpen) {
-                // Cerrar todos los otros menús antes de abrir este
-                $('.nav-item.has-treeview').not(parentItem).each(function() {
-                    const $otherMenu = $(this);
-                    if ($otherMenu.hasClass('menu-open')) {
-                        $otherMenu.removeClass('menu-open');
-                        $otherMenu.find('.nav-treeview').slideUp(200);
-                        
-                        // Limpiar del localStorage
-                        const otherMenuId = $otherMenu.attr('id') || generateMenuId($otherMenu.find('> .nav-link'));
-                        const currentState = JSON.parse(localStorage.getItem('janus_menu_state') || '{}');
-                        delete currentState[otherMenuId];
-                        localStorage.setItem('janus_menu_state', JSON.stringify(currentState));
-                    }
-                });
-                
-                // Abrir el menú actual con animación
-                setTimeout(() => {
-                    parentItem.addClass('menu-open');
-                    parentItem.find('.nav-treeview').slideDown(200);
-                    
-                    // Guardar en localStorage
-                    const currentState = JSON.parse(localStorage.getItem('janus_menu_state') || '{}');
-                    currentState[menuId] = 'open';
-                    localStorage.setItem('janus_menu_state', JSON.stringify(currentState));
-                }, 50);
-            } else {
-                // Si ya está abierto, cerrarlo
-                parentItem.removeClass('menu-open');
-                parentItem.find('.nav-treeview').slideUp(200);
-                
-                // Remover del localStorage
-                const currentState = JSON.parse(localStorage.getItem('janus_menu_state') || '{}');
-                delete currentState[menuId];
-                localStorage.setItem('janus_menu_state', JSON.stringify(currentState));
-            }
-            
-            // Prevenir el comportamiento por defecto de AdminLTE
-            e.preventDefault();
-            e.stopPropagation();
-        });
     }
     
-    // Función para marcar el elemento activo del menú
-    function markActiveMenuItem(currentPath) {
-        $('.nav-sidebar .nav-link').removeClass('active');
-        
-        const routeMap = {
-            'inicio': 'a[href="main/inicio/"]',
-            'usuarios': 'a[href="configuracion/usuarios/"]',
-            'ciudades': 'a[href="configuracion/ciudades/"]',
-            'vigencias': 'a[href="configuracion/vigencias/"]',
-            'honorarios': 'a[href="configuracion/honorarios/"]',
-            'imputaciones_gestionar': 'a[href="imputaciones/gestionar/"]',
-            'necesidades_gestionar': 'a[href="necesidades/gestionar/"]',
-            'necesidades_listar': 'a[href="necesidades/listar/"]',
-            'personas_gestionar': 'a[href="personas/gestionar/"]',
-            'ocuparNecesidad': 'a[href="proceso/ocuparNecesidad/"]',
-            'documentacion': 'a[href="proceso/documentacion/"]',
-            'crearTercero': 'a[href="proceso/crearTercero/"]',
-            'expedircdp': 'a[href="proceso/expedircdp/"]',
-            'fr': 'a[href="proceso/fr/"]',
-            'ciip': 'a[href="proceso/ciip/"]',
-            'eep_evaluar': 'a[href="proceso/eep_evaluar/"]',
-            'eep': 'a[href="proceso/eep_evaluar/"]',
-            'perfil': 'a[href="proceso/perfil/"]',
-            'minuta': 'a[href="proceso/minuta/"]',
-            'numerar': 'a[href="proceso/numerar/"]',
-            'arl': 'a[href="proceso/arl/"]',
-            'rp': 'a[href="proceso/rp/"]',
-            'supervisor': 'a[href="proceso/supervisor/"]',
-            'actaInicio': 'a[href="proceso/actaInicio/"]',
-            'resumen': 'a[href="proceso/resumen/"]',
-            'diagnostico': 'a[href="proceso/diagnostico/"]',
-            'buscar': 'a[href="solicitudes/buscar/"]',
-            'informacion': 'a[href="ps/informacion/"]',
-            'documentos': 'a[href="ps/documentos/"]'
-        };
-        
-        // Lógica mejorada para determinar la página actual
-        let selector = null;
-        const pathParts = currentPath.split('/').filter(x => x);
-        
-        // Casos especiales para páginas con el mismo nombre en diferentes módulos
-        if (pathParts.length >= 2) {
-            const module = pathParts[pathParts.length - 2]; // penúltimo elemento
-            const page = pathParts[pathParts.length - 1];   // último elemento
-            
-            if (page === 'gestionar') {
-                if (module === 'imputaciones') {
-                    selector = routeMap['imputaciones_gestionar'];
-                } else if (module === 'necesidades') {
-                    selector = routeMap['necesidades_gestionar'];
-                } else if (module === 'personas') {
-                    selector = routeMap['personas_gestionar'];
-                }
-            } else if (page === 'listar') {
-                if (module === 'necesidades') {
-                    selector = routeMap['necesidades_listar'];
-                }
-            }
-        }
-        
-        // Si no se encontró selector específico, usar lógica original
-        if (!selector) {
+    if (!selector) {
+        // Special-case: profile page under /main should map to main/perfil, not proceso/perfil
+        if (currentPath.indexOf('/main/perfil') !== -1 || currentPath.match(/\/main\/perfil\/?$/)) {
+            selector = 'a[href="main/perfil/"]';
+        } else {
             const currentPage = pathParts.pop() || 'inicio';
             selector = routeMap[currentPage];
         }
-        
-        // Fallback: buscar por coincidencia en la ruta
-        if (!selector) {
-            for (const [key, value] of Object.entries(routeMap)) {
-                if (currentPath.includes(key.replace('_', '/'))) {
-                    selector = value;
-                    break;
-                }
+    }
+    
+    if (!selector) {
+        for (const [key, value] of Object.entries(routeMap)) {
+            if (currentPath.includes(key.replace('_', '/'))) { selector = value; break; }
+        }
+    }
+
+    if (selector) {
+        const activeLink = $(selector);
+        if (activeLink.length) {
+            activeLink.addClass('active');
+            const parentGroup = activeLink.closest('.menu-group');
+            if (parentGroup.length) {
+                parentGroup.addClass('menu-open');
+                var $submenu = parentGroup.find('.submenu');
+                $submenu.css('max-height', '500px');
+                try{
+                    const menuId = parentGroup.data('menu-id');
+                    if(menuId === 'menu_flujo'){
+                        var fullH = 0; $submenu.children().each(function(){ fullH += $(this).outerHeight(true); });
+                        $submenu[0].style.setProperty('--submenu-full-height', fullH + 'px');
+                    }
+                }catch(e){ console.error('active menu compute full height failed', e); }
+                const menuId = parentGroup.data('menu-id');
+                localStorage.setItem('janus_menu_state', JSON.stringify({ lastOpen: menuId }));
             }
         }
-        
-        if (selector) {
-            const activeLink = $(selector);
-            if (activeLink.length) {
-                activeLink.addClass('active');
-                
-                const parentTreeview = activeLink.closest('.nav-treeview');
-                if (parentTreeview.length) {
-                    const parentItem = parentTreeview.closest('.nav-item.has-treeview');
-                    parentItem.addClass('menu-open');
-                    parentTreeview.show();
-                    
-                    const menuId = generateMenuId(parentItem.find('> .nav-link'));
-                    const currentState = JSON.parse(localStorage.getItem('janus_menu_state') || '{}');
-                    currentState[menuId] = 'open';
-                    localStorage.setItem('janus_menu_state', JSON.stringify(currentState));
+    }
+}
+
+// Función para configurar mejoras del menú
+function setupMenuEnhancements() {
+    const currentPath = window.location.pathname;
+    const menuState = JSON.parse(localStorage.getItem('janus_menu_state') || '{}');
+    
+    // 1. Marcar página activa
+    markActiveMenuItem(currentPath);
+    
+    // 2. Restaurar menús abiertos
+    const lastOpenMenuId = menuState.lastOpen;
+    if (lastOpenMenuId) {
+        const menuItem = $(`.menu-group[data-menu-id="${lastOpenMenuId}"]`);
+        if (menuItem.length) {
+            menuItem.addClass('menu-open');
+            var $submenu = menuItem.find('.submenu');
+            $submenu.css('max-height', '500px');
+            try{
+                if(lastOpenMenuId === 'menu_flujo' && $submenu.length){
+                    var fullH = 0;
+                    $submenu.children().each(function(){ fullH += $(this).outerHeight(true); });
+                    $submenu[0].style.setProperty('--submenu-full-height', fullH + 'px');
                 }
-            }
+            }catch(e){ console.error('restore submenu full height failed', e); }
         }
     }
     
-    function generateMenuId(linkElement) {
-        const text = linkElement.find('p').text().trim() || linkElement.text().trim();
-        return 'menu_' + text.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
-    }
+    // 3. Manejo de clics (Comportamiento Acordeón)
+    $('.menu-group > .menu-header').off('click.menuEnhancement').on('click.menuEnhancement', function(e) {
+        const parentGroup = $(this).closest('.menu-group');
+        const submenu = parentGroup.find('.submenu');
+        const menuId = parentGroup.data('menu-id');
+        const isCurrentlyOpen = parentGroup.hasClass('menu-open');
+        
+        // Cerrar todos los otros menús antes de abrir este (Acordeón)
+        $('.menu-group').not(parentGroup).each(function() {
+            const $otherMenu = $(this);
+            if ($otherMenu.hasClass('menu-open')) {
+                $otherMenu.removeClass('menu-open');
+                $otherMenu.find('.submenu').css('max-height', '0px');
+            }
+        });
+        
+        if (!isCurrentlyOpen) {
+            // Abrir
+            parentGroup.addClass('menu-open');
+            submenu.css('max-height', '500px');
+            // If this is the Flujo group, compute the full content height and
+            // expose it as a CSS variable so the ::before indicator can span
+            // the entire submenu (not just the visible 5 items).
+            try{
+                if(menuId === 'menu_flujo'){
+                    var fullH = 0;
+                    if(submenu.length && submenu[0].children.length){
+                        // sum heights of child <li> elements to get full content height
+                        submenu.children().each(function(){ fullH += $(this).outerHeight(true); });
+                    } else {
+                        fullH = submenu[0] ? submenu[0].scrollHeight : 0;
+                    }
+                    // set CSS custom property on the submenu element
+                    submenu[0].style.setProperty('--submenu-full-height', fullH + 'px');
+                }
+            }catch(err){ console.error('compute submenu full height failed', err); }
+            // Guardar en localStorage
+            localStorage.setItem('janus_menu_state', JSON.stringify({ lastOpen: menuId }));
+        } else {
+            // Cerrar
+            parentGroup.removeClass('menu-open');
+            submenu.css('max-height', '0px');
+            // remove any computed full height
+            try{ submenu[0] && submenu[0].style.removeProperty('--submenu-full-height'); }catch(e){}
+            // Remover del localStorage
+            localStorage.removeItem('janus_menu_state');
+        }
+        
+        e.preventDefault();
+        e.stopPropagation();
+    });
+}
+    
+    
     
     function cleanupMenuState() {
         // Limpiar estados de menús que ya no existen en el DOM
@@ -446,6 +604,59 @@
     function clearMenuState() {
         localStorage.removeItem('janus_menu_state');
     }
+
+// Wrap plain text nodes in menu anchors with .menu-text so inline hover CSS works
+function wrapJanusMenuText(){
+    try{
+        $('#janus-menu-dynamic').find('a').each(function(){
+            var $a = $(this);
+            if ($a.find('.menu-text').length === 0) {
+                var textNodes = $a.contents().filter(function(){ return this.nodeType === 3 && $.trim(this.nodeValue).length > 0; });
+                if (textNodes.length) {
+                    textNodes.wrap('<span class="menu-text"></span>');
+                } else {
+                    var $p = $a.find('p');
+                    if ($p.length && $a.find('.menu-text').length === 0) {
+                        $p.wrap('<span class="menu-text"></span>');
+                    }
+                }
+            }
+        });
+    }catch(e){ console.error('wrapJanusMenuText failed', e); }
+}
+
+// Some FA icons don't have 'far' (regular) variants. After we replaced
+// 'fas' with 'far' during transform, icons that don't exist become invisible.
+// This function detects icons that appear to have no width and switches them
+// back to 'fas' to guarantee visibility.
+function fixMissingIcons(){
+    try{
+        // Check all icon <i> elements: if rendered width is essentially zero
+        // the chosen family is likely not available (e.g. 'fal' / Pro light).
+        // In that case fall back to 'far' then 'fas' to guarantee visibility.
+        $('#janus-menu-dynamic').find('i').each(function(){
+            var $i = $(this);
+            try{
+                var w = $i[0].getBoundingClientRect().width;
+                if(w < 3){
+                    // Try to normalize families: prefer regular then solid
+                    if($i.hasClass('fal')){
+                        $i.removeClass('fal').addClass('far');
+                    }
+                    // remeasure
+                    w = $i[0].getBoundingClientRect().width;
+                    if(w < 3){
+                        // ensure at least 'fas' is present
+                        $i.removeClass('far').addClass('fas');
+                    }
+                }
+            }catch(e){
+                // if measurement fails for some reason, conservatively ensure solid
+                if(!$i.hasClass('fas')){ $i.addClass('fas'); }
+            }
+        });
+    }catch(e){ console.error('fixMissingIcons failed', e); }
+}
 </script>
 
 <!-- Variables globales para estados y colores -->
@@ -576,6 +787,101 @@ if (typeof fetch !== 'undefined') {
 
 <!-- Sistema de Tabla Estándar Janus -->
 <script src="dist/js/tabla-procesos-estandar.js"></script>
+
+<script>
+// Ensure layout variables match actual header height so content isn't pushed awkwardly
+(function(){
+    function updateHeaderHeight(){
+        try{
+            var header = document.querySelector('.main-header');
+            var h = header ? header.offsetHeight : 0; // if header removed, no extra top gap
+            document.documentElement.style.setProperty('--janus-header-height', h + 'px');
+            // Also update sidebar/content immediately
+            var sidebar = document.querySelector('aside.main-sidebar, .janus-sidebar');
+            if(sidebar){ sidebar.style.top = (h) + 'px'; sidebar.style.height = 'calc(100vh - ' + h + 'px)'; sidebar.style.position = 'fixed'; }
+            var content = document.querySelector('.content-wrapper');
+            if(content){ content.style.marginTop = (h) + 'px'; content.style.marginLeft = '280px'; }
+            var footer = document.querySelector('.main-footer');
+            if(footer){ footer.style.marginLeft = '280px'; }
+        }catch(e){ console.error('updateHeaderHeight failed', e); }
+    }
+    // Run on ready and on resize (debounced)
+    $(document).ready(updateHeaderHeight);
+    var resizeTimer;
+    $(window).on('resize', function(){ clearTimeout(resizeTimer); resizeTimer = setTimeout(updateHeaderHeight, 120); });
+})();
+</script>
+
+<script>
+// Sidebar user footer submenu toggle
+$(function(){
+    var $submenu = $('#janus-user-submenu');
+    if($submenu.length){
+        $submenu.hide();
+        // Toggle when clicking the footer container (but ignore clicks inside the submenu links)
+        $(document).on('click', '#janus-user-footer', function(e){
+            // If the click originated inside the submenu, allow normal link behavior
+            if($(e.target).closest('#janus-user-submenu').length) return;
+            e.preventDefault();
+            $submenu.stop(true, true).slideToggle(150);
+        });
+
+        // Close when clicking outside
+        $(document).on('click', function(e){
+            if(!$(e.target).closest('#janus-user-footer').length){
+                if($submenu.is(':visible')) $submenu.stop(true, true).slideUp(120);
+            }
+        });
+    }
+    // Ensure submenu links navigate even if other handlers stop default
+    $(document).on('click', '#janus-user-submenu a', function(e){
+        e.stopPropagation();
+        var href = $(this).attr('href');
+        if(href && href !== '#'){
+            // Force navigation
+            window.location.href = href;
+        }
+        // Allow default in case it's handled normally; return true
+        return true;
+    });
+});
+</script>
+
+<!-- Ensure menu text nodes are wrapped so CSS can highlight only the text width -->
+<script>
+$(function(){
+    try{
+        // Top-level headers: wrap plain text nodes in a span.menu-text
+        $('.menu-group .menu-header').each(function(){
+            var $h = $(this);
+            if ($h.find('> span').length === 0) {
+                var textNodes = $h.contents().filter(function(){ return this.nodeType === 3 && $.trim(this.nodeValue).length > 0; });
+                if (textNodes.length) {
+                    textNodes.wrap('<span class="menu-text"></span>');
+                }
+            }
+        });
+
+        // Submenu & anchor links: wrap text nodes inside anchors so the hover highlights only text width
+        $('#janus-menu-dynamic').find('a').each(function(){
+            var $a = $(this);
+            // Do not wrap if an element already provides .menu-text or if anchor contains multiple structural elements
+            if ($a.find('.menu-text').length === 0) {
+                var textNodes = $a.contents().filter(function(){ return this.nodeType === 3 && $.trim(this.nodeValue).length > 0; });
+                if (textNodes.length) {
+                    textNodes.wrap('<span class="menu-text"></span>');
+                } else {
+                    // Some links use <p> wrappers — move that content into .menu-text
+                    var $p = $a.find('p');
+                    if ($p.length && $a.find('.menu-text').length === 0) {
+                        $p.wrap('<span class="menu-text"></span>');
+                    }
+                }
+            }
+        });
+    }catch(e){ console.error('menu-text wrapping failed', e); }
+});
+</script>
 
 </body>
 </html>

@@ -2,6 +2,14 @@
 
 <link rel="stylesheet" href="dist/css/proceso-moderno.css">
 
+<style>
+/* Compact filter card for ocuparNecesidad */
+.card.card-kit.card-compact { border-radius: .6rem; }
+.card.card-kit.card-compact .card-body { padding: 12px 14px !important; }
+.card.card-kit.card-compact .card-header { padding: 8px 14px !important; }
+.card.card-kit.card-compact .form-group-kit { margin-bottom: 8px; }
+</style>
+
 <div class="content-wrapper">
     <section class="content-header">
         <div class="container-fluid">
@@ -30,57 +38,54 @@
             <!-- Filtros personalizados -->
             <div class="row">
                 <div class="col">
-                    <div class="card card-kit">
+                    <div class="card card-kit card-compact">
                         <div class="card-body">
-                            <div class="row mb-4">
+                            <div class="row align-items-end">
                                 <!-- Búsqueda General -->
                                 <div class="col-md-4">
-                                    <div class="form-group-kit">
-                                        <label for="filtro-busqueda-general">Búsqueda General</label>
-                                        <input type="text" 
-                                               id="filtro-busqueda-general" 
-                                               class="input-kit" 
-                                               placeholder="Buscar por proceso, nombre, cédula...">
-                                    </div>
+                                    <label class="form-label"><small><strong>BÚSQUEDA GENERAL</strong></small></label>
+                                    <input type="text" 
+                                           id="filtro-busqueda-general" 
+                                           class="form-control form-control-sm" 
+                                           placeholder="Buscar por proceso, nombre, cédula...">
                                 </div>
-                                
+
                                 <!-- Filtro por Gerencia -->
                                 <div class="col-md-3">
-                                    <div class="form-group-kit">
-                                        <label for="filtro-gerencia">Filtrar por Gerencia</label>
-                                        <select id="filtro-gerencia" 
-                                                class="input-kit">
-                                            <option value="">Todas las gerencias</option>
-                                        </select>
-                                    </div>
+                                    <label class="form-label"><small><strong>GERENCIA</strong></small></label>
+                                    <select id="filtro-gerencia" 
+                                            class="form-control form-control-sm">
+                                        <option value="">Todas las gerencias</option>
+                                    </select>
                                 </div>
-                                
+
                                 <!-- Filtro por Días -->
                                 <div class="col-md-2">
-                                    <div class="form-group-kit">
-                                        <label for="filtro-dias">Filtrar por Días</label>
-                                        <select id="filtro-dias" 
-                                                class="input-kit">
-                                            <option value="">Todos</option>
-                                            <option value="0-3">0-3 días</option>
-                                            <option value="4-7">4-7 días</option>
-                                            <option value="8-15">8-15 días</option>
-                                            <option value="15+">Más de 15 días</option>
-                                        </select>
-                                    </div>
+                                    <label class="form-label"><small><strong>DÍAS</strong></small></label>
+                                    <select id="filtro-dias" 
+                                            class="form-control form-control-sm">
+                                        <option value="">Todos</option>
+                                        <option value="0-3">0-3 días</option>
+                                        <option value="4-7">4-7 días</option>
+                                        <option value="8-15">8-15 días</option>
+                                        <option value="15+">Más de 15 días</option>
+                                    </select>
                                 </div>
-                                
+
                                 <!-- Botón Limpiar -->
-                                <div class="col-md-3">
-                                    <div class="form-group-kit">
-                                        <label>&nbsp;</label>
-                                        <div>
-                                            <button type="button" 
-                                                    id="btn-limpiar-filtros" 
-                                                    class="btn-kit btn-kit-secondary w-100">
-                                                <i class="fas fa-eraser"></i> Limpiar Filtros
-                                            </button>
-                                        </div>
+                                <div class="col-md-2">
+                                    <button type="button" 
+                                            id="btn-limpiar-filtros" 
+                                            class="btn btn-outline-secondary btn-sm w-100">
+                                        <i class="fas fa-eraser"></i> Limpiar
+                                    </button>
+                                </div>
+
+                                <!-- Contador -->
+                                <div class="col-md-1 text-right">
+                                    <label class="form-label"><small><strong>TOTAL</strong></small></label>
+                                    <div>
+                                        <span id="contador-filtrados" class="badge badge-primary badge-pill">0</span>
                                     </div>
                                 </div>
                             </div>

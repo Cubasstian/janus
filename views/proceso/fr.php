@@ -81,7 +81,7 @@
             <!-- PANEL DE FILTROS ADAPTADO DE EEP -->
             <div class="row mb-3">
                 <div class="col-12">
-                    <div class="card">
+                    <div class="card card-kit card-compact">
                         <div class="card-body">
                             <div class="row align-items-end">
                                 <!-- Búsqueda General -->
@@ -139,7 +139,7 @@
             
             <div class="row">   
                 <div class="col">
-                    <div class="card shadow-lg" style="border: 2px solid #000; border-radius: 12px;">
+                    <div class="card shadow-lg card-kit" style="border: 2px solid #000; border-radius: 12px;">
                         <div class="card-header card-header-clean">
                             <h3 class="card-title">
                                 <i class="fas fa-file-alt mr-2"></i>Ficha de Requerimiento - Gestión de Documentos
@@ -147,15 +147,15 @@
                         </div>
                         <div class="card-body p-0">
                             <div class="table-responsive">
-                                <table class="table table-hover modern-table mb-0" style="width: 100%; min-width: 800px;">
+                                <table id="tablaSolicitudes" class="data-table" style="width: 100%; min-width: 800px;">
                                     <thead>
                                         <tr>
-                                            <th style="width: 15%;"><i class="fas fa-hashtag mr-1 text-primary"></i>Proceso</th>
-                                            <th style="width: 25%;"><i class="fas fa-user mr-1 text-success"></i>Nombre</th>
-                                            <th style="width: 15%;"><i class="fas fa-id-card mr-1 text-info"></i>Cédula</th>
-                                            <th style="width: 15%;"><i class="fas fa-building mr-1 text-secondary"></i>Gerencia</th>
-                                            <th class="text-center" style="width: 15%;"><i class="fas fa-clock mr-1 text-warning"></i>Días</th>
-                                            <th class="text-center" style="width: 15%;"><i class="fas fa-cogs mr-1 text-secondary"></i>Opciones</th>
+                                            <th style="width: 15%;">Proceso</th>
+                                            <th style="width: 25%;">Nombre</th>
+                                            <th style="width: 15%;">Cédula</th>
+                                            <th style="width: 15%;">Gerencia</th>
+                                            <th class="text-center" style="width: 15%;">Días</th>
+                                            <th class="text-center" style="width: 15%;">Opciones</th>
                                         </tr>
                                     </thead>
                                     <tbody id="contenido"></tbody>
